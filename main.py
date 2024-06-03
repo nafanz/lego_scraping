@@ -5,29 +5,24 @@ import csv
 url_main = 'https://www.lego.com'
 url_themes = 'https://www.lego.com/en-us/themes'
 
-
-def get_soup(url, page=None):
-    match page:
-        case None:
-            themes = requests.get(url=url)
-        case _:
-            themes = requests.get(url=f'{url}?page={page}&offset=0')
-
-    with open(file='index.html', mode='w') as file_index:
-        file_index.write(themes.text)
-
-    return file_index
+index_html = 'index.html'
+themes_csv = 'themes.csv'
 
 
-def get_themes(file_index):
-    try:
-        with open(file=file_index, mode='r') as file:
-            themes_soup = BeautifulSoup(file, 'lxml')
-    except FileNotFoundError:
-        get_soup(url_themes)
+def get_index():
+    themes = requests.get(url=url_themes)
 
-        with open(file=file_index, mode='r') as file:
-            themes_soup = BeautifulSoup(file, 'lxml')
+    with open(file=index_html, mode='w') as file:
+        file.write(themes.text)
+
+    print('get_index')
+
+    return file
+
+
+def index_to_themes():
+    with open(file=index_html, mode='r') as file:
+        themes_soup = BeautifulSoup(file, 'lxml')
 
     themes = themes_soup.find('section').ul
     themes = themes.find_all('li')
@@ -44,15 +39,40 @@ def get_themes(file_index):
 
     keys = themes_list[0].keys()
 
-    with open('themes.csv', 'w') as file:
+    with open(themes_csv, 'w') as file:
         dict_writer = csv.DictWriter(file, keys)
         dict_writer.writeheader()
         dict_writer.writerows(themes_list)
 
+    print('index_to_themes')
+
     return themes_list
 
 
-get_themes('index.html')
+def open_file_index():
+    try:
+        index_to_themes()
+    except FileNotFoundError:
+        get_index()
+        index_to_themes()
+
+
+def themes_to():
+    with open(themes_csv, 'r') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            print(row['url'])
+
+
+def open_file_themes():
+    try:
+        themes_to()
+    except FileNotFoundError:
+        open_file_index()
+        themes_to()
+
+
+open_file_themes()
 
 
 def get_toys_pages(soup):

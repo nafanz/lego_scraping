@@ -6,21 +6,30 @@ url_main = 'https://www.lego.com'
 url_themes = 'https://www.lego.com/en-us/themes'
 
 
-def get_soup(url, page=1):
-    if page == 1:
-        r = requests.get(url=url)
-    else:
-        url = f'{url}?page={page}&offset=0'
-        r = requests.get(url=url)
+def get_soup(url, page=None):
+    match page:
+        case None:
+            themes = requests.get(url=url)
+        case _:
+            themes = requests.get(url=f'{url}?page={page}&offset=0')
 
-    with open(file='index.html', mode='w') as file:
-        file.write(r.text)
+    with open(file='index.html', mode='w') as file_index:
+        file_index.write(themes.text)
 
-    return BeautifulSoup(r.text, 'lxml')
+    return file_index
 
 
-def get_themes(soup):
-    themes = soup.find('section').ul
+def get_themes(file_index):
+    try:
+        with open(file=file_index, mode='r') as file:
+            themes_soup = BeautifulSoup(file, 'lxml')
+    except FileNotFoundError:
+        get_soup(url_themes)
+
+        with open(file=file_index, mode='r') as file:
+            themes_soup = BeautifulSoup(file, 'lxml')
+
+    themes = themes_soup.find('section').ul
     themes = themes.find_all('li')
 
     themes_list = []
@@ -41,6 +50,9 @@ def get_themes(soup):
         dict_writer.writerows(themes_list)
 
     return themes_list
+
+
+get_themes('index.html')
 
 
 def get_toys_pages(soup):
@@ -118,7 +130,7 @@ def get_toys_values(collection='Marvel'):
 
     return toys_data
 
-def main():
+# def main():
     # soup = get_soup(url=url_themes)
     # themes = get_themes(soup=soup)
     # print(themes)
@@ -127,8 +139,8 @@ def main():
     # print(get_toys_pages(soup=soup))
 
     # soup = get_soup(url='https://www.lego.com/en-us/themes/marvel')
-    get_toys_values()
-
-
-if __name__ == '__main__':
-    main()
+#     get_toys_values()
+#
+#
+# if __name__ == '__main__':
+#     main()
